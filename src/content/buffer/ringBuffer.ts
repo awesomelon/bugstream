@@ -48,16 +48,13 @@ export class RingBuffer<T extends TimestampedItem> {
     );
   }
 
-  clear(): void {
-    this.items = [];
-  }
-
   get length(): number {
     return this.items.length;
   }
 
-  setMaxDuration(durationMs: number): void {
-    this.maxDuration = durationMs;
+  getDuration(): number {
     this.evictOld();
+    if (this.items.length === 0) return 0;
+    return Date.now() - this.items[0].timestamp;
   }
 }

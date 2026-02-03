@@ -31,5 +31,11 @@
       "js": ["src/content/index.ts"],
       "run_at": "document_start"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected/networkInjected.js"],
+      "matches": ["<all_urls>"]
+    }
   ]
 }

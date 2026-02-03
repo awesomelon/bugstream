@@ -23,6 +23,8 @@ export function startRrwebRecording(options: RrwebRecorderOptions = {}): void {
       events.push(event);
       options.onEvent?.(event);
     },
+    // Periodic full DOM snapshots for recovery after tab suspension
+    checkoutEveryNms: 10000,
     // Block heavy/problematic elements
     blockSelector: options.blockSelector || 'iframe, canvas, video, [data-rrweb-block]',
     blockClass: 'rrweb-block',
@@ -89,4 +91,10 @@ export function isRecording(): boolean {
 
 export function clearEvents(): void {
   events = [];
+}
+
+export function takeFullSnapshot(): void {
+  if (stopRecording) {
+    record.takeFullSnapshot();
+  }
 }

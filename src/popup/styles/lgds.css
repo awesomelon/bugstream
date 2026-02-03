@@ -113,6 +113,13 @@ body {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+.status-timer {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 12px;
+  margin-left: 8px;
+  opacity: 0.8;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
@@ -268,19 +275,13 @@ body {
   color: var(--text-primary);
 }
 
-.setting-item select {
-  padding: 8px 12px;
+.setting-value {
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--text-secondary);
+  padding: 8px 12px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  cursor: pointer;
-}
-
-.setting-item select:focus {
-  outline: none;
-  border-color: var(--accent-blue);
 }
 
 .setting-description {

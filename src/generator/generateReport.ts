@@ -404,13 +404,28 @@ export async function generateHtmlReport(report: BugStreamReport): Promise<strin
         \`).join('');
       }
 
+      function getUrlPath(url) {
+        try {
+          return new URL(url).pathname;
+        } catch {
+          // Handle relative URLs or invalid URLs
+          return url.split('?')[0];
+        }
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
       function renderNetwork() {
         if (report.network.length === 0) {
           panelContent.innerHTML = '<div class="empty-state">No network requests captured</div>';
           return;
         }
 
-        panelContent.innerHTML = report.network.map(entry => {
+        try {
+          panelContent.innerHTML = report.network.map(entry => {
           const isError = entry.status >= 400 || entry.error;
           const statusClass = isError ? 'error' : 'success';
 
@@ -419,38 +434,42 @@ export async function generateHtmlReport(report: BugStreamReport): Promise<strin
               <div class="network-header">
                 <span class="network-method \${entry.method}">\${entry.method}</span>
                 <span class="network-status \${statusClass}">\${entry.status || entry.error || 'pending'}</span>
-                <span class="network-url" title="\${entry.url}">\${new URL(entry.url).pathname}</span>
+                <span class="network-url" title="\${escapeHtml(entry.url)}">\${escapeHtml(getUrlPath(entry.url))}</span>
                 <span class="network-time">\${entry.duration ? entry.duration + 'ms' : ''}</span>
               </div>
               <div class="network-details">
-                \${entry.requestHeaders ? \`
+                \${entry.requestHeaders && Object.keys(entry.requestHeaders).length > 0 ? \`
                   <div class="detail-section">
                     <h4>Request Headers</h4>
-                    <pre>\${JSON.stringify(entry.requestHeaders, null, 2)}</pre>
+                    <pre>\${escapeHtml(JSON.stringify(entry.requestHeaders, null, 2))}</pre>
                   </div>
                 \` : ''}
                 \${entry.requestBody ? \`
                   <div class="detail-section">
                     <h4>Request Body</h4>
-                    <pre>\${entry.requestBody.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                    <pre>\${escapeHtml(entry.requestBody)}</pre>
                   </div>
                 \` : ''}
-                \${entry.responseHeaders ? \`
+                \${entry.responseHeaders && Object.keys(entry.responseHeaders).length > 0 ? \`
                   <div class="detail-section">
                     <h4>Response Headers</h4>
-                    <pre>\${JSON.stringify(entry.responseHeaders, null, 2)}</pre>
+                    <pre>\${escapeHtml(JSON.stringify(entry.responseHeaders, null, 2))}</pre>
                   </div>
                 \` : ''}
                 \${entry.responseBody ? \`
                   <div class="detail-section">
                     <h4>Response Body</h4>
-                    <pre>\${entry.responseBody.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                    <pre>\${escapeHtml(entry.responseBody)}</pre>
                   </div>
                 \` : ''}
               </div>
             </div>
           \`;
-        }).join('');
+          }).join('');
+        } catch (err) {
+          console.error('Error rendering network tab:', err);
+          panelContent.innerHTML = '<div class="empty-state">Error rendering network data</div>';
+        }
       }
 
       tabs.forEach(tab => {

@@ -6,6 +6,7 @@ import SettingsPanel from './components/SettingsPanel';
 interface RecordingState {
   isRecording: boolean;
   startTime: number | null;
+  bufferDuration: number;
   eventCount: number;
   consoleCount: number;
   networkCount: number;
@@ -15,13 +16,13 @@ export default function App() {
   const [state, setState] = useState<RecordingState>({
     isRecording: true,
     startTime: null,
+    bufferDuration: 0,
     eventCount: 0,
     consoleCount: 0,
     networkCount: 0,
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [bufferDuration, setBufferDuration] = useState(60);
 
   useEffect(() => {
     const fetchState = async () => {
@@ -85,15 +86,12 @@ export default function App() {
       </header>
 
       {showSettings ? (
-        <SettingsPanel
-          bufferDuration={bufferDuration}
-          onBufferDurationChange={setBufferDuration}
-          onClose={() => setShowSettings(false)}
-        />
+        <SettingsPanel onClose={() => setShowSettings(false)} />
       ) : (
         <>
           <StatusIndicator
             isRecording={state.isRecording}
+            bufferDuration={state.bufferDuration}
             eventCount={state.eventCount}
             consoleCount={state.consoleCount}
             networkCount={state.networkCount}

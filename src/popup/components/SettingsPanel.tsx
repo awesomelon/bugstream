@@ -1,14 +1,8 @@
 interface SettingsPanelProps {
-  bufferDuration: number;
-  onBufferDurationChange: (duration: number) => void;
   onClose: () => void;
 }
 
-export default function SettingsPanel({
-  bufferDuration,
-  onBufferDurationChange,
-  onClose,
-}: SettingsPanelProps) {
+export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   return (
     <div className="settings-panel">
       <div className="settings-header">
@@ -23,21 +17,12 @@ export default function SettingsPanel({
 
       <div className="settings-content">
         <div className="setting-item">
-          <label htmlFor="buffer-duration">Buffer Duration</label>
-          <select
-            id="buffer-duration"
-            value={bufferDuration}
-            onChange={(e) => onBufferDurationChange(Number(e.target.value))}
-          >
-            <option value={30}>30 seconds</option>
-            <option value={60}>60 seconds</option>
-            <option value={120}>2 minutes</option>
-            <option value={300}>5 minutes</option>
-          </select>
+          <label>Buffer Duration</label>
+          <span className="setting-value">60 seconds (fixed)</span>
         </div>
 
         <p className="setting-description">
-          How far back to capture when saving a report.
+          BugStream captures the last 60 seconds of activity when saving a report.
         </p>
       </div>
     </div>

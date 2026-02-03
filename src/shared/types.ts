@@ -43,7 +43,6 @@ export interface ReportMetadata {
 export interface RecordingState {
   isRecording: boolean;
   startTime: number | null;
-  bufferDuration: number;
 }
 
 export type MessageType =

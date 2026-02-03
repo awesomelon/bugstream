@@ -2,7 +2,7 @@ import type { eventWithTime } from 'rrweb';
 import type { ConsoleEntry, NetworkEntry, Message, BugStreamReport, ReportMetadata } from '../shared/types';
 import { DEFAULT_BUFFER_DURATION, BUGSTREAM_VERSION } from '../shared/constants';
 import { RingBuffer } from './buffer/ringBuffer';
-import { startRrwebRecording, stopRrwebRecording, isRecording } from './recorders/rrwebRecorder';
+import { startRrwebRecording, stopRrwebRecording, isRecording, takeFullSnapshot } from './recorders/rrwebRecorder';
 import { startConsoleInterception, stopConsoleInterception } from './recorders/consoleInterceptor';
 import { startNetworkInterception, stopNetworkInterception } from './recorders/networkInterceptor';
 import { sanitizeNetworkEntry, sanitizeConsoleEntry } from './sanitizer/dataSanitizer';
@@ -87,18 +87,6 @@ function downloadHtml(htmlContent: string): string {
   return filename;
 }
 
-export function clearBuffers(): void {
-  rrwebBuffer.clear();
-  consoleBuffer.clear();
-  networkBuffer.clear();
-}
-
-export function setBufferDuration(duration: number): void {
-  rrwebBuffer.setMaxDuration(duration);
-  consoleBuffer.setMaxDuration(duration);
-  networkBuffer.setMaxDuration(duration);
-}
-
 chrome.runtime.onMessage.addListener(
   (message: Message, _sender: chrome.runtime.MessageSender, sendResponse: (response: unknown) => void) => {
     (async () => {
@@ -118,6 +106,7 @@ chrome.runtime.onMessage.addListener(
             sendResponse({
               isRecording: isRecording(),
               startTime: recordingStartTime,
+              bufferDuration: rrwebBuffer.getDuration(),
               eventCount: rrwebBuffer.length,
               consoleCount: consoleBuffer.length,
               networkCount: networkBuffer.length,
@@ -145,5 +134,14 @@ chrome.runtime.onMessage.addListener(
 );
 
 startRecording();
+
+// Handle tab visibility changes for recording stability
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && isRecording()) {
+    // Take full snapshot when tab becomes visible again
+    // This ensures rrweb re-syncs the DOM state after potential JS suspension
+    takeFullSnapshot();
+  }
+});
 
 console.log('[BugStream] Content script loaded and recording started');
