@@ -30,11 +30,15 @@ export default defineConfig({
     rollupOptions: {
       input: {
         networkInjected: 'src/content/injected/networkInjected.ts',
+        consoleInjected: 'src/content/injected/consoleInjected.ts',
       },
       output: {
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'networkInjected') {
             return 'injected/networkInjected.js';
+          }
+          if (chunkInfo.name === 'consoleInjected') {
+            return 'injected/consoleInjected.js';
           }
           return 'assets/[name]-[hash].js';
         },
