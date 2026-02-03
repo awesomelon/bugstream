@@ -34,7 +34,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["injected/networkInjected.js", "injected/consoleInjected.js"],
+      "resources": ["injected/networkInjected.js", "injected/consoleInjected.js", "injected/keyboardInjected.js"],
       "matches": ["<all_urls>"]
     }
   ]

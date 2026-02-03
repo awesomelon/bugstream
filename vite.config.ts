@@ -31,6 +31,7 @@ export default defineConfig({
       input: {
         networkInjected: 'src/content/injected/networkInjected.ts',
         consoleInjected: 'src/content/injected/consoleInjected.ts',
+        keyboardInjected: 'src/content/injected/keyboardInjected.ts',
       },
       output: {
         entryFileNames: (chunkInfo) => {
@@ -39,6 +40,9 @@ export default defineConfig({
           }
           if (chunkInfo.name === 'consoleInjected') {
             return 'injected/consoleInjected.js';
+          }
+          if (chunkInfo.name === 'keyboardInjected') {
+            return 'injected/keyboardInjected.js';
           }
           return 'assets/[name]-[hash].js';
         },

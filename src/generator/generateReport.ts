@@ -274,6 +274,82 @@ export async function generateHtmlReport(report: BugStreamReport): Promise<strin
       font-size: 14px;
     }
 
+    .keyboard-entry {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .keyboard-entry:hover {
+      background: var(--glass-bg);
+    }
+
+    .keyboard-entry.keydown {
+      border-left: 3px solid var(--accent-blue);
+    }
+
+    .keyboard-entry.keyup {
+      border-left: 3px solid var(--text-muted);
+      opacity: 0.7;
+    }
+
+    .keyboard-type {
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .keyboard-type.keydown {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--accent-blue);
+    }
+
+    .keyboard-type.keyup {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    .keyboard-key {
+      font-weight: 600;
+      font-size: 13px;
+      padding: 2px 8px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    .keyboard-key.masked {
+      color: var(--accent-yellow);
+    }
+
+    .keyboard-modifiers {
+      display: flex;
+      gap: 4px;
+    }
+
+    .keyboard-modifier {
+      font-size: 9px;
+      padding: 2px 4px;
+      border-radius: 2px;
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--accent-green);
+    }
+
+    .keyboard-target {
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-left: auto;
+    }
+
     .loading {
       display: flex;
       align-items: center;
@@ -367,6 +443,7 @@ export async function generateHtmlReport(report: BugStreamReport): Promise<strin
           <div class="tabs">
             <button class="tab active" data-panel="console">Console (\${report.console.length})</button>
             <button class="tab" data-panel="network">Network (\${report.network.length})</button>
+            <button class="tab" data-panel="keyboard">Keyboard (\${report.keyboard?.length || 0})</button>
           </div>
           <div class="tab-content" id="panel-content"></div>
         </div>
@@ -472,6 +549,36 @@ export async function generateHtmlReport(report: BugStreamReport): Promise<strin
         }
       }
 
+      function renderKeyboard() {
+        const keyboard = report.keyboard || [];
+        if (keyboard.length === 0) {
+          panelContent.innerHTML = '<div class="empty-state">No keyboard events captured</div>';
+          return;
+        }
+
+        panelContent.innerHTML = keyboard.map(entry => {
+          const modifiers = [];
+          if (entry.ctrlKey) modifiers.push('Ctrl');
+          if (entry.shiftKey) modifiers.push('Shift');
+          if (entry.altKey) modifiers.push('Alt');
+          if (entry.metaKey) modifiers.push('Meta');
+
+          return \`
+            <div class="keyboard-entry \${entry.type}">
+              <span class="log-time">\${formatTime(entry.timestamp, startTime)}</span>
+              <span class="keyboard-type \${entry.type}">\${entry.type === 'keydown' ? 'DOWN' : 'UP'}</span>
+              <span class="keyboard-key \${entry.masked ? 'masked' : ''}">\${escapeHtml(entry.key)}</span>
+              \${modifiers.length > 0 ? \`
+                <span class="keyboard-modifiers">
+                  \${modifiers.map(m => \`<span class="keyboard-modifier">\${m}</span>\`).join('')}
+                </span>
+              \` : ''}
+              \${entry.targetType ? \`<span class="keyboard-target">\${entry.targetType}</span>\` : ''}
+            </div>
+          \`;
+        }).join('');
+      }
+
       tabs.forEach(tab => {
         tab.addEventListener('click', () => {
           tabs.forEach(t => t.classList.remove('active'));
@@ -479,8 +586,10 @@ export async function generateHtmlReport(report: BugStreamReport): Promise<strin
 
           if (tab.dataset.panel === 'console') {
             renderConsole();
-          } else {
+          } else if (tab.dataset.panel === 'network') {
             renderNetwork();
+          } else if (tab.dataset.panel === 'keyboard') {
+            renderKeyboard();
           }
         });
       });

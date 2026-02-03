@@ -4,6 +4,7 @@ interface StatusIndicatorProps {
   eventCount: number;
   consoleCount: number;
   networkCount: number;
+  keyboardCount: number;
 }
 
 function formatDuration(ms: number): string {
@@ -19,6 +20,7 @@ export default function StatusIndicator({
   eventCount,
   consoleCount,
   networkCount,
+  keyboardCount,
 }: StatusIndicatorProps) {
   return (
     <div className="status-container">
@@ -40,6 +42,10 @@ export default function StatusIndicator({
         <div className="stat-item">
           <span className="stat-value">{networkCount}</span>
           <span className="stat-label">Network</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-value">{keyboardCount}</span>
+          <span className="stat-label">Keyboard</span>
         </div>
       </div>
     </div>

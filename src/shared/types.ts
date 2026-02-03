@@ -7,6 +7,20 @@ export interface ConsoleEntry {
   stack?: string;
 }
 
+export interface KeyboardEntry {
+  timestamp: number;
+  type: 'keydown' | 'keyup';
+  key: string;
+  code: string;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
+  metaKey: boolean;
+  repeat: boolean;
+  targetType?: string;
+  masked?: boolean;
+}
+
 export interface NetworkEntry {
   timestamp: number;
   id: string;
@@ -28,6 +42,7 @@ export interface BugStreamReport {
   events: eventWithTime[];
   console: ConsoleEntry[];
   network: NetworkEntry[];
+  keyboard: KeyboardEntry[];
 }
 
 export interface ReportMetadata {

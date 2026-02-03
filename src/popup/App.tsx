@@ -10,6 +10,7 @@ interface RecordingState {
   eventCount: number;
   consoleCount: number;
   networkCount: number;
+  keyboardCount: number;
 }
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
     eventCount: 0,
     consoleCount: 0,
     networkCount: 0,
+    keyboardCount: 0,
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -95,6 +97,7 @@ export default function App() {
             eventCount={state.eventCount}
             consoleCount={state.consoleCount}
             networkCount={state.networkCount}
+            keyboardCount={state.keyboardCount}
           />
 
           <div className="actions">

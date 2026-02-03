@@ -1,16 +1,18 @@
 import type { eventWithTime } from 'rrweb';
-import type { ConsoleEntry, NetworkEntry, Message, BugStreamReport, ReportMetadata } from '../shared/types';
+import type { ConsoleEntry, NetworkEntry, KeyboardEntry, Message, BugStreamReport, ReportMetadata } from '../shared/types';
 import { DEFAULT_BUFFER_DURATION, BUGSTREAM_VERSION } from '../shared/constants';
 import { RingBuffer } from './buffer/ringBuffer';
 import { startRrwebRecording, stopRrwebRecording, isRecording, takeFullSnapshot } from './recorders/rrwebRecorder';
 import { startConsoleInterception, stopConsoleInterception } from './recorders/consoleInterceptor';
 import { startNetworkInterception, stopNetworkInterception } from './recorders/networkInterceptor';
+import { startKeyboardInterception, stopKeyboardInterception } from './recorders/keyboardInterceptor';
 import { sanitizeNetworkEntry, sanitizeConsoleEntry } from './sanitizer/dataSanitizer';
 import { generateHtmlReport } from '../generator/generateReport';
 
 const rrwebBuffer = new RingBuffer<eventWithTime & { timestamp: number }>(DEFAULT_BUFFER_DURATION);
 const consoleBuffer = new RingBuffer<ConsoleEntry>(DEFAULT_BUFFER_DURATION);
 const networkBuffer = new RingBuffer<NetworkEntry>(DEFAULT_BUFFER_DURATION);
+const keyboardBuffer = new RingBuffer<KeyboardEntry>(DEFAULT_BUFFER_DURATION);
 
 let recordingStartTime: number | null = null;
 
@@ -32,18 +34,24 @@ function startRecording(): void {
   startNetworkInterception((entry) => {
     networkBuffer.push(sanitizeNetworkEntry(entry));
   });
+
+  startKeyboardInterception((entry) => {
+    keyboardBuffer.push(entry);
+  });
 }
 
 function stopRecording(): void {
   stopRrwebRecording();
   stopConsoleInterception();
   stopNetworkInterception();
+  stopKeyboardInterception();
 }
 
 function generateReport(): BugStreamReport {
   const events = rrwebBuffer.getAll();
   const consoleLogs = consoleBuffer.getAll();
   const networkLogs = networkBuffer.getAll();
+  const keyboardLogs = keyboardBuffer.getAll();
 
   const startTime = events.length > 0 ? events[0].timestamp : Date.now();
   const endTime = events.length > 0 ? events[events.length - 1].timestamp : Date.now();
@@ -64,6 +72,7 @@ function generateReport(): BugStreamReport {
     events,
     console: consoleLogs,
     network: networkLogs,
+    keyboard: keyboardLogs,
   };
 }
 
@@ -110,6 +119,7 @@ chrome.runtime.onMessage.addListener(
               eventCount: rrwebBuffer.length,
               consoleCount: consoleBuffer.length,
               networkCount: networkBuffer.length,
+              keyboardCount: keyboardBuffer.length,
             });
             break;
 
