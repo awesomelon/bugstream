@@ -55,19 +55,18 @@ export interface ReportMetadata {
   duration: number;
 }
 
-export interface RecordingState {
-  isRecording: boolean;
-  startTime: number | null;
+export interface BugStreamOptions {
+  bufferDuration?: number;
+  blockSelector?: string;
+  maskInputSelector?: string;
 }
 
-export type MessageType =
-  | 'START_RECORDING'
-  | 'STOP_RECORDING'
-  | 'GET_STATE'
-  | 'GENERATE_REPORT'
-  | 'RECORDING_STATE_CHANGED';
-
-export interface Message<T = unknown> {
-  type: MessageType;
-  payload?: T;
+export interface BugStreamState {
+  isRecording: boolean;
+  startTime: number | null;
+  bufferDuration: number;
+  eventCount: number;
+  consoleCount: number;
+  networkCount: number;
+  keyboardCount: number;
 }

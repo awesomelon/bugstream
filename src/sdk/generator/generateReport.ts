@@ -1,4 +1,4 @@
-import type { BugStreamReport } from '../shared/types';
+import type { BugStreamReport } from '../types';
 import { compressData } from './compression';
 
 export async function generateHtmlReport(report: BugStreamReport): Promise<string> {

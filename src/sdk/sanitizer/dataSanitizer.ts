@@ -1,4 +1,4 @@
-import type { NetworkEntry, ConsoleEntry } from '../../shared/types';
+import type { NetworkEntry, ConsoleEntry } from '../types';
 
 const SENSITIVE_PATTERNS = [
   /password/i,

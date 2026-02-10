@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BugStream SDK Test</title>
+  <script src="dist/bugstream-sdk.js"></script>
+</head>
+<body>
+  <h1>BugStream SDK Test</h1>
+  <p>Open DevTools console to see state. Click buttons to test.</p>
+
+  <div style="margin: 20px 0;">
+    <input type="text" placeholder="type here">
+    <input type="password" placeholder="password (masked)">
+  </div>
+
+  <div style="margin: 20px 0;">
+    <button onclick="bs.start()">Start Recording</button>
+    <button onclick="bs.stop()">Stop Recording</button>
+    <button onclick="console.log(bs.getState())">Log State</button>
+    <button onclick="bs.generateReport()">Generate Report</button>
+    <button onclick="bs.destroy()">Destroy</button>
+  </div>
+
+  <div style="margin: 20px 0;">
+    <button onclick="console.log('Test log')">console.log</button>
+    <button onclick="console.warn('Test warning')">console.warn</button>
+    <button onclick="console.error('Test error')">console.error</button>
+    <button onclick="fetch('https://jsonplaceholder.typicode.com/posts/1').then(r=>r.json()).then(d=>console.log('Fetched:', d))">Fetch Test</button>
+  </div>
+
+  <script>
+    const bs = new BugStream({ bufferDuration: 60000 });
+    console.log('BugStream SDK loaded, window.BugStream:', typeof window.BugStream);
+    console.log('Instance created:', bs);
+  </script>
+</body>
+</html>

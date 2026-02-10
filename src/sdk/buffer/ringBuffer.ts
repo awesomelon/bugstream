@@ -57,4 +57,8 @@ export class RingBuffer<T extends TimestampedItem> {
     if (this.items.length === 0) return 0;
     return Date.now() - this.items[0].timestamp;
   }
+
+  clear(): void {
+    this.items = [];
+  }
 }

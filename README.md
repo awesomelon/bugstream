@@ -1,66 +1,88 @@
 # BugStream
 
-**보안 걱정 없는, 개발자를 위한 블랙박스**
+**Privacy-first JavaScript SDK for generating self-contained HTML bug reports**
 
-Privacy-first Chrome extension that captures screen recordings, console logs, and network requests in a single, self-contained HTML file. No server transmission, no data leaks.
+Screen recordings (rrweb), console logs, network requests, and keyboard events — all captured locally and packaged into a single HTML file. No server required.
 
 ## Features
 
-- **DOM Recording**: Pixel-perfect screen recording using rrweb
-- **Console Capture**: Logs, warnings, and errors with stack traces
-- **Network Capture**: XHR/Fetch requests with headers and bodies
-- **Data Sanitization**: Automatic masking of passwords and sensitive data
-- **Offline Viewer**: Generated HTML works without internet
-- **Timeline Sync**: Synchronized playback of screen, console, and network
+- **DOM Recording** — Pixel-perfect screen recording via rrweb
+- **Console Capture** — Logs, warnings, errors with deep serialization
+- **Network Capture** — fetch/XHR requests with headers and bodies
+- **Keyboard Capture** — Keystroke events with automatic password masking
+- **Data Sanitization** — Sensitive fields (passwords, tokens, API keys) auto-masked
+- **Self-Contained Reports** — Generated HTML works offline, includes synchronized timeline playback
 
-## Installation
+## Quick Start
 
-### Development
+### Build
 
 ```bash
-# Install dependencies
 npm install
-
-# Build extension
-npm run build
-
-# Development with hot reload
-npm run dev
+npm run build    # TypeScript check + Vite build → dist/bugstream-sdk.js
 ```
 
-### Load Extension in Chrome
+### Usage
 
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable "Developer mode" (top right toggle)
-3. Click "Load unpacked"
-4. Select the `dist` folder
+```html
+<script src="bugstream-sdk.js"></script>
+<script>
+  const bs = new BugStream({ bufferDuration: 60000 });
+  bs.start();
+  // ... reproduce bug ...
+  bs.generateReport(); // auto-downloads HTML report
+</script>
+```
 
-## Usage
+## API
 
-1. Click the BugStream icon in your browser toolbar
-2. The extension automatically records the last 60 seconds
-3. When you encounter a bug, click "Save Report"
-4. Open the downloaded HTML file to replay the session
+| Method | Description |
+|--------|-------------|
+| `new BugStream(options?)` | Create instance. `options.bufferDuration` sets buffer window (default: 60000ms) |
+| `start()` | Start recording (DOM, console, network, keyboard) |
+| `stop()` | Stop recording, restore original APIs |
+| `generateReport()` | Generate and auto-download self-contained HTML report |
+| `getState()` | Get current recording state and buffer statistics |
+| `destroy()` | Stop recording and clean up all resources |
 
 ## Architecture
 
+SDK runs directly in the page context. Native APIs (console, fetch/XHR, keyboard) are wrapped in-place and restored on stop.
+
 ```
-bugstream/
-├── src/
-│   ├── content/          # Content scripts (rrweb, interceptors)
-│   ├── background/       # Service worker
-│   ├── popup/            # Extension popup UI
-│   ├── generator/        # HTML report generator
-│   └── shared/           # Types and utilities
-└── dist/                 # Built extension
+BugStream → recorders (API wrapping) → ring buffers (time-based) → report generator
 ```
+
+- **Ring Buffer**: Time-based circular buffer, evicts entries older than `bufferDuration`
+- **Report Pipeline**: Collect buffers → JSON serialize → gzip compress (fflate) → embed in HTML with rrweb-player
+- **Sanitization**: Masks sensitive fields in network headers/bodies and console args before buffering
+
+## Scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `dev` | `vite build --watch` | File watch + auto-rebuild |
+| `build` | `tsc && vite build` | TypeScript check + production build |
+| `preview` | `vite preview` | Local preview of build output |
+
+## Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| [rrweb](https://github.com/rrweb-io/rrweb) | DOM recording |
+| [fflate](https://github.com/101arrowz/fflate) | Gzip compression for report data |
 
 ## Security
 
-- All processing happens locally in your browser
+- All processing happens locally in the browser
 - No data is transmitted to any server
-- Sensitive fields (passwords, tokens) are automatically masked
+- Sensitive fields (passwords, tokens, API keys, authorization headers) are automatically masked
 - Generated reports are self-contained HTML files
+
+## Docs
+
+- [CONTRIB.md](docs/CONTRIB.md) — Development setup, project structure, contribution workflow
+- [RUNBOOK.md](docs/RUNBOOK.md) — Build, deploy, troubleshooting
 
 ## License
 

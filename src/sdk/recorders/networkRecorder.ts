@@ -1,63 +1,45 @@
-// This script is injected into the page context to intercept network requests
-// It runs in the MAIN world, not the isolated content script world
+import type { NetworkEntry } from '../types';
+import { MAX_REQUEST_BODY_SIZE, MAX_RESPONSE_BODY_SIZE } from '../constants';
 
-export {};
+let isIntercepting = false;
+let requestId = 0;
 
-const MAX_REQUEST_BODY_SIZE = 50000;
-const MAX_RESPONSE_BODY_SIZE = 100000;
+// Store original references for restoration
+let originalFetch: typeof window.fetch | null = null;
+let originalXhrOpen: typeof XMLHttpRequest.prototype.open | null = null;
+let originalXhrSend: typeof XMLHttpRequest.prototype.send | null = null;
+let originalXhrSetRequestHeader: typeof XMLHttpRequest.prototype.setRequestHeader | null = null;
 
-interface NetworkEntry {
-  timestamp: number;
-  id: string;
-  method: string;
-  url: string;
-  requestHeaders?: Record<string, string>;
-  requestBody?: string;
-  status?: number;
-  statusText?: string;
-  responseHeaders?: Record<string, string>;
-  responseBody?: string;
-  duration?: number;
-  error?: string;
+function generateId(): string {
+  return `req_${++requestId}_${Date.now()}`;
 }
 
-interface ExtendedWindow extends Window {
-  __bugstreamNetworkIntercepting?: boolean;
+function truncateBody(body: string | undefined, maxSize: number): string | undefined {
+  if (!body) return undefined;
+  if (body.length <= maxSize) return body;
+  return body.slice(0, maxSize) + `... [truncated, ${body.length - maxSize} bytes omitted]`;
 }
 
-(function (win: ExtendedWindow) {
-  if (win.__bugstreamNetworkIntercepting) return;
-  win.__bugstreamNetworkIntercepting = true;
+function parseHeaders(headers: Headers): Record<string, string> {
+  const result: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    result[key] = value;
+  });
+  return result;
+}
 
-  let requestId = 0;
+export function startNetworkRecording(callback: (entry: NetworkEntry) => void): void {
+  if (isIntercepting) return;
+  isIntercepting = true;
+  requestId = 0;
 
-  function generateId(): string {
-    return `req_${++requestId}_${Date.now()}`;
-  }
-
-  function truncateBody(body: string | undefined, maxSize: number): string | undefined {
-    if (!body) return undefined;
-    if (body.length <= maxSize) return body;
-    return body.slice(0, maxSize) + `... [truncated, ${body.length - maxSize} bytes omitted]`;
-  }
-
-  function parseHeaders(headers: Headers): Record<string, string> {
-    const result: Record<string, string> = {};
-    headers.forEach((value, key) => {
-      result[key] = value;
-    });
-    return result;
-  }
-
-  function sendEntry(entry: NetworkEntry): void {
-    win.postMessage({ type: '__BUGSTREAM_NETWORK_ENTRY__', entry }, '*');
-  }
+  // Save originals
+  originalFetch = window.fetch;
+  originalXhrOpen = XMLHttpRequest.prototype.open;
+  originalXhrSend = XMLHttpRequest.prototype.send;
+  originalXhrSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
 
   // Intercept XMLHttpRequest
-  const originalXhrOpen = XMLHttpRequest.prototype.open;
-  const originalXhrSend = XMLHttpRequest.prototype.send;
-  const originalXhrSetRequestHeader = XMLHttpRequest.prototype.setRequestHeader;
-
   XMLHttpRequest.prototype.open = function (
     method: string,
     url: string | URL,
@@ -75,7 +57,7 @@ interface ExtendedWindow extends Window {
 
     (this as XMLHttpRequest & { __bugstream_entry: NetworkEntry }).__bugstream_entry = entry;
 
-    return originalXhrOpen.call(this, method, url, async, user, password);
+    return originalXhrOpen!.call(this, method, url, async, user, password);
   };
 
   XMLHttpRequest.prototype.setRequestHeader = function (name: string, value: string) {
@@ -83,7 +65,7 @@ interface ExtendedWindow extends Window {
     if (entry && entry.requestHeaders) {
       entry.requestHeaders[name] = value;
     }
-    return originalXhrSetRequestHeader.call(this, name, value);
+    return originalXhrSetRequestHeader!.call(this, name, value);
   };
 
   XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null) {
@@ -118,29 +100,28 @@ interface ExtendedWindow extends Window {
           // Response may not be text
         }
 
-        sendEntry(entry);
+        callback(entry);
       });
 
       this.addEventListener('error', () => {
         entry.error = 'Network error';
         entry.duration = Date.now() - startTime;
-        sendEntry(entry);
+        callback(entry);
       });
 
       this.addEventListener('timeout', () => {
         entry.error = 'Request timeout';
         entry.duration = Date.now() - startTime;
-        sendEntry(entry);
+        callback(entry);
       });
     }
 
-    return originalXhrSend.call(this, body);
+    return originalXhrSend!.call(this, body);
   };
 
   // Intercept fetch
-  const originalFetch = win.fetch;
-
-  win.fetch = async function (
+  const savedFetch = originalFetch;
+  window.fetch = async function (
     input: RequestInfo | URL,
     init?: RequestInit
   ): Promise<Response> {
@@ -171,7 +152,7 @@ interface ExtendedWindow extends Window {
     const startTime = Date.now();
 
     try {
-      const response = await originalFetch.call(win, input, init);
+      const response = await savedFetch!.call(window, input, init);
 
       entry.status = response.status;
       entry.statusText = response.statusText;
@@ -186,13 +167,37 @@ interface ExtendedWindow extends Window {
         // Response may not be text
       }
 
-      sendEntry(entry);
+      callback(entry);
       return response;
     } catch (error) {
       entry.error = error instanceof Error ? error.message : 'Fetch error';
       entry.duration = Date.now() - startTime;
-      sendEntry(entry);
+      callback(entry);
       throw error;
     }
   };
-})(window as ExtendedWindow);
+}
+
+export function stopNetworkRecording(): void {
+  if (!isIntercepting) return;
+
+  // Restore originals
+  if (originalFetch) {
+    window.fetch = originalFetch;
+    originalFetch = null;
+  }
+  if (originalXhrOpen) {
+    XMLHttpRequest.prototype.open = originalXhrOpen;
+    originalXhrOpen = null;
+  }
+  if (originalXhrSend) {
+    XMLHttpRequest.prototype.send = originalXhrSend;
+    originalXhrSend = null;
+  }
+  if (originalXhrSetRequestHeader) {
+    XMLHttpRequest.prototype.setRequestHeader = originalXhrSetRequestHeader;
+    originalXhrSetRequestHeader = null;
+  }
+
+  isIntercepting = false;
+}
